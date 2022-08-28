@@ -1,0 +1,10 @@
+services:
+  api:
+    image: sotnak/api
+    container_name: api
+    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://127.0.0.1:27017
+      - SECRET=secret
+    ports:
+      - "8080:8080"

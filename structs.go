@@ -6,7 +6,7 @@ type Tag struct {
 }
 
 type Gif struct {
-	Name string   `json:"name"`
+	Name string   `json:"title"`
 	Url  string   `json:"url"`
 	Tags []string `json:"tags"`
 }
