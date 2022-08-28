@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-var secret string = os.Getenv("SECRET")
-
 func getHash(time int) string {
+	secret := os.Getenv("SECRET")
+
 	key := secret + "." + strconv.Itoa(time)
 	hash := sha256.New()
 

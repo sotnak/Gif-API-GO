@@ -1,70 +1,82 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
-	"net/http"
+	"os"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
-type Message struct {
-	EndPoint string   `json:"EndPoint"`
-	Msg      []string `json:"Message"`
+func authMiddleware(c *gin.Context) {
+	auth := c.Request.Header.Get("Authorization")
+
+	if len(auth) == 0 || !check(auth) {
+		c.AbortWithStatusJSON(401, gin.H{"error": "Authorization failed"})
+		return
+	}
+
+	c.Next()
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
+func init() {
+	err := godotenv.Load(".env")
 
-		if !check(auth) {
-			w.WriteHeader(401)
-			return
-		}
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
 
-		log.Println(r.Header.Get("user-agent"))
-		log.Println(r.RequestURI)
-
-		next.ServeHTTP(w, r)
-	})
+	log.Println("using mongo on: " + os.Getenv("MONGO_URL"))
+	log.Println("secret set to: " + os.Getenv("SECRET"))
 }
 
 func main() {
-	router := mux.NewRouter()
 
-	router.Use(loggingMiddleware)
+	r := gin.Default()
 
-	router.HandleFunc("/tagsCount", func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("query")
+	r.Use(authMiddleware)
 
-		response := Message{EndPoint: "tagsCount", Msg: []string{query, "go home"}}
+	r.GET("/tagsCount", func(ctx *gin.Context) {
+		query := ctx.Request.URL.Query().Get("query")
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}).Methods("GET")
+		count := getTagsCount(query)
 
-	router.HandleFunc("/tags", func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("query")
-		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		ctx.JSON(200, gin.H{
+			"count": count,
+		})
+	})
 
-		response := Message{EndPoint: "tags", Msg: []string{query, strconv.Itoa(limit), strconv.Itoa(skip), "go home"}}
+	r.GET("/tags", func(ctx *gin.Context) {
+		query := ctx.Request.URL.Query().Get("query")
+		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
+		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}).Methods("GET")
+		tags := getTags(query, int64(limit), int64(skip))
 
-	router.HandleFunc("/gifs", func(w http.ResponseWriter, r *http.Request) {
-		tag := r.URL.Query().Get("tag")
-		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		ctx.JSON(200, tags)
+	})
 
-		response := Message{EndPoint: "gifs", Msg: []string{tag, strconv.Itoa(limit), strconv.Itoa(skip), "go home"}}
+	r.GET("/gifs", func(ctx *gin.Context) {
+		tag := ctx.Request.URL.Query().Get("tag")
+		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
+		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}).Methods("GET")
+		var gifs []Gif
+		switch tag {
+		case "RANDOM":
+			gifs = getRandomGifs(int64(limit))
+			break
+		case "ALL":
+			gifs = getGifsByTag("", int64(limit), int64(skip))
+			break
+		default:
+			gifs = getGifsByTag(tag, int64(limit), int64(skip))
+			break
+		}
 
-	http.ListenAndServe(":8080", router)
+		ctx.JSON(200, gifs)
+	})
+
+	r.Run() // listen and serve on 0.0.0.0:8080
 }

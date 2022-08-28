@@ -2,7 +2,7 @@ package main
 
 type Tag struct {
 	Name  string `json:"name"`
-	Count string `json:"count"`
+	Count int    `json:"count"`
 }
 
 type Gif struct {
