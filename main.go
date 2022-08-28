@@ -75,8 +75,6 @@ func main() {
 			break
 		}
 
-		log.Println(gifs)
-
 		ctx.JSON(200, gifs)
 	})
 
