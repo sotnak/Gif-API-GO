@@ -6,9 +6,9 @@ type Tag struct {
 }
 
 type Gif struct {
-	Name string   `json:"title"`
-	Url  string   `json:"url"`
-	Tags []string `json:"tags"`
+	Title string   `json:"title"`
+	Url   string   `json:"url"`
+	Tags  []string `json:"tags"`
 }
 
 type CountStruct struct {
