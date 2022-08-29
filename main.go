@@ -4,20 +4,26 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-func authMiddleware(c *gin.Context) {
-	auth := c.Request.Header.Get("Authorization")
+func authMiddleware() gin.HandlerFunc {
 
-	if len(auth) == 0 || !check(auth) {
-		c.AbortWithStatusJSON(401, gin.H{"error": "Authorization failed"})
-		return
+	return func(ctx *gin.Context) {
+		auth := ctx.Request.Header.Get("Authorization")
+
+		if len(auth) == 0 || !check(auth) {
+			ctx.AbortWithStatusJSON(401, gin.H{"error": "Authorization failed"})
+			return
+		}
+
+		ctx.Next()
 	}
-
-	c.Next()
 }
 
 func init() {
@@ -35,10 +41,11 @@ func init() {
 }
 
 func main() {
+	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 
 	r := gin.Default()
 
-	r.Use(authMiddleware)
+	r.Use(authMiddleware())
 
 	r.GET("/:db/tagsCount", func(ctx *gin.Context) {
 		query := ctx.Request.URL.Query().Get("query")
@@ -62,27 +69,28 @@ func main() {
 		ctx.JSON(200, tags)
 	})
 
-	r.GET("/:db/gifs", func(ctx *gin.Context) {
-		tag := ctx.Request.URL.Query().Get("tag")
-		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
-		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
-		db := ctx.Param("db")
+	r.GET("/:db/gifs", cache.CacheByRequestURI(memoryStore, 5*time.Second),
+		func(ctx *gin.Context) {
+			tag := ctx.Request.URL.Query().Get("tag")
+			limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
+			skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
+			db := ctx.Param("db")
 
-		var gifs []Gif
-		switch tag {
-		case "RANDOM":
-			gifs = getRandomGifs(db, int64(limit))
-			break
-		case "ALL":
-			gifs = getGifsByTag(db, "", int64(limit), int64(skip))
-			break
-		default:
-			gifs = getGifsByTag(db, tag, int64(limit), int64(skip))
-			break
-		}
+			var gifs []Gif
+			switch tag {
+			case "RANDOM":
+				gifs = getRandomGifs(db, int64(limit))
+				break
+			case "ALL":
+				gifs = getGifsByTag(db, "", int64(limit), int64(skip))
+				break
+			default:
+				gifs = getGifsByTag(db, tag, int64(limit), int64(skip))
+				break
+			}
 
-		ctx.JSON(200, gifs)
-	})
+			ctx.JSON(200, gifs)
+		})
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
