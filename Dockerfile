@@ -1,6 +1,6 @@
 
 ## Build
-FROM golang:1.16-buster AS build
+FROM golang:buster AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY *.go ./
 RUN go build -o /api
 
 ## Deploy
-FROM gcr.io/distroless/base-debian10
+FROM gcr.io/distroless/base-debian11
 
 WORKDIR /
 
