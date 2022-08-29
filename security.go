@@ -3,15 +3,12 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"os"
 	"strconv"
 	"time"
 )
 
 func getHash(time int) string {
-	secret := os.Getenv("SECRET")
-
-	key := secret + "." + strconv.Itoa(time)
+	key := Env.Secret + "." + strconv.Itoa(time)
 	hash := sha256.New()
 
 	hash.Write([]byte(key))

@@ -1,15 +1,12 @@
 package main
 
 import (
-	"log"
-	"os"
 	"strconv"
 	"time"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func authMiddleware() gin.HandlerFunc {
@@ -27,49 +24,42 @@ func authMiddleware() gin.HandlerFunc {
 }
 
 func init() {
-
-	if os.Getenv("GIN_MODE") != "release" {
-		err := godotenv.Load(".env")
-
-		if err != nil {
-			log.Println("Error loading .env file")
-		}
-	}
-
-	log.Println("using mongo on: " + os.Getenv("MONGO_URL"))
-	log.Println("secret set to: " + os.Getenv("SECRET"))
+	initEnv()
 }
 
 func main() {
+
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 
 	r := gin.Default()
 
 	r.Use(authMiddleware())
 
-	r.GET("/:db/tagsCount", func(ctx *gin.Context) {
-		query := ctx.Request.URL.Query().Get("query")
-		db := ctx.Param("db")
+	r.GET("/:db/tagsCount", cache.CacheByRequestURI(memoryStore, Env.TagsCacheTime),
+		func(ctx *gin.Context) {
+			query := ctx.Request.URL.Query().Get("query")
+			db := ctx.Param("db")
 
-		count := getTagsCount(db, query)
+			count := getTagsCount(db, query)
 
-		ctx.JSON(200, gin.H{
-			"count": count,
+			ctx.JSON(200, gin.H{
+				"count": count,
+			})
 		})
-	})
 
-	r.GET("/:db/tags", func(ctx *gin.Context) {
-		query := ctx.Request.URL.Query().Get("query")
-		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
-		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
-		db := ctx.Param("db")
+	r.GET("/:db/tags", cache.CacheByRequestURI(memoryStore, Env.TagsCacheTime),
+		func(ctx *gin.Context) {
+			query := ctx.Request.URL.Query().Get("query")
+			limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
+			skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
+			db := ctx.Param("db")
 
-		tags := getTags(db, query, int64(limit), int64(skip))
+			tags := getTags(db, query, int64(limit), int64(skip))
 
-		ctx.JSON(200, tags)
-	})
+			ctx.JSON(200, tags)
+		})
 
-	r.GET("/:db/gifs", cache.CacheByRequestURI(memoryStore, 5*time.Second),
+	r.GET("/:db/gifs", cache.CacheByRequestURI(memoryStore, Env.GifsCacheTime),
 		func(ctx *gin.Context) {
 			tag := ctx.Request.URL.Query().Get("tag")
 			limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))

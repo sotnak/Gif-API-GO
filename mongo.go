@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,9 +11,7 @@ import (
 
 func connect() *mongo.Client {
 
-	mongo_url := os.Getenv("MONGO_URL")
-
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongo_url))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(Env.MongoUrl))
 
 	if err != nil {
 		panic(err)
