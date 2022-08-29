@@ -34,14 +34,14 @@ func initEnv() {
 	log.Println("using mongo on: " + Env.MongoUrl)
 	log.Println("secret set to: " + Env.Secret)
 
-	tagsCacheTimeInt, err := strconv.Atoi(os.Getenv(""))
+	tagsCacheTimeInt, err := strconv.Atoi(os.Getenv("TAGS_CAHCE_TIME"))
 	if err != nil {
 		tagsCacheTimeInt = 3
 	}
 
 	Env.TagsCacheTime = time.Duration(int(time.Second) * tagsCacheTimeInt)
 
-	gifsCacheTimeInt, err := strconv.Atoi(os.Getenv(""))
+	gifsCacheTimeInt, err := strconv.Atoi(os.Getenv("GIFS_CAHCE_TIME"))
 	if err != nil {
 		gifsCacheTimeInt = 3
 	}
