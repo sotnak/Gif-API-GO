@@ -37,41 +37,44 @@ func main() {
 
 	r.Use(authMiddleware)
 
-	r.GET("/tagsCount", func(ctx *gin.Context) {
+	r.GET("/:db/tagsCount", func(ctx *gin.Context) {
 		query := ctx.Request.URL.Query().Get("query")
+		db := ctx.Param("db")
 
-		count := getTagsCount(query)
+		count := getTagsCount(db, query)
 
 		ctx.JSON(200, gin.H{
 			"count": count,
 		})
 	})
 
-	r.GET("/tags", func(ctx *gin.Context) {
+	r.GET("/:db/tags", func(ctx *gin.Context) {
 		query := ctx.Request.URL.Query().Get("query")
 		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
 		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
+		db := ctx.Param("db")
 
-		tags := getTags(query, int64(limit), int64(skip))
+		tags := getTags(db, query, int64(limit), int64(skip))
 
 		ctx.JSON(200, tags)
 	})
 
-	r.GET("/gifs", func(ctx *gin.Context) {
+	r.GET("/:db/gifs", func(ctx *gin.Context) {
 		tag := ctx.Request.URL.Query().Get("tag")
 		limit, _ := strconv.Atoi(ctx.Request.URL.Query().Get("limit"))
 		skip, _ := strconv.Atoi(ctx.Request.URL.Query().Get("skip"))
+		db := ctx.Param("db")
 
 		var gifs []Gif
 		switch tag {
 		case "RANDOM":
-			gifs = getRandomGifs(int64(limit))
+			gifs = getRandomGifs(db, int64(limit))
 			break
 		case "ALL":
-			gifs = getGifsByTag("", int64(limit), int64(skip))
+			gifs = getGifsByTag(db, "", int64(limit), int64(skip))
 			break
 		default:
-			gifs = getGifsByTag(tag, int64(limit), int64(skip))
+			gifs = getGifsByTag(db, tag, int64(limit), int64(skip))
 			break
 		}
 

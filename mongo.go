@@ -27,7 +27,7 @@ func disconnect(client *mongo.Client) {
 	client.Disconnect(context.TODO())
 }
 
-func getTagsCount(query string) int64 {
+func getTagsCount(db string, query string) int64 {
 	client := connect()
 	defer disconnect(client)
 
@@ -40,7 +40,7 @@ func getTagsCount(query string) int64 {
 		)
 	}
 
-	count, err := client.Database("nsfw").Collection("tags").CountDocuments(context.TODO(), filter)
+	count, err := client.Database(db).Collection("tags").CountDocuments(context.TODO(), filter)
 
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func getTagsCount(query string) int64 {
 	return count
 }
 
-func getTags(query string, limit int64, skip int64) []Tag {
+func getTags(db string, query string, limit int64, skip int64) []Tag {
 	client := connect()
 	defer disconnect(client)
 
@@ -67,7 +67,7 @@ func getTags(query string, limit int64, skip int64) []Tag {
 		)
 	}
 
-	cursor, err := client.Database("nsfw").Collection("tags").Find(context.TODO(), filter, opts)
+	cursor, err := client.Database(db).Collection("tags").Find(context.TODO(), filter, opts)
 
 	if err != nil {
 		panic(err)
@@ -85,7 +85,7 @@ func getTags(query string, limit int64, skip int64) []Tag {
 	return results
 }
 
-func getGifsByTag(tag string, limit int64, skip int64) []Gif {
+func getGifsByTag(db string, tag string, limit int64, skip int64) []Gif {
 	client := connect()
 	defer disconnect(client)
 
@@ -99,7 +99,7 @@ func getGifsByTag(tag string, limit int64, skip int64) []Gif {
 		filter = append(filter, bson.E{Key: "tags", Value: tag})
 	}
 
-	cursor, err := client.Database("nsfw").Collection("gifs").Find(context.TODO(), filter, opts)
+	cursor, err := client.Database(db).Collection("gifs").Find(context.TODO(), filter, opts)
 
 	if err != nil {
 		panic(err)
@@ -117,13 +117,13 @@ func getGifsByTag(tag string, limit int64, skip int64) []Gif {
 	return results
 }
 
-func getRandomGifs(limit int64) []Gif {
+func getRandomGifs(db string, limit int64) []Gif {
 	client := connect()
 	defer disconnect(client)
 
 	pipeline := []bson.D{{{Key: "$sample", Value: bson.D{{Key: "size", Value: limit}}}}}
 
-	cursor, err := client.Database("nsfw").Collection("gifs").Aggregate(context.TODO(), pipeline)
+	cursor, err := client.Database(db).Collection("gifs").Aggregate(context.TODO(), pipeline)
 
 	if err != nil {
 		panic(err)
