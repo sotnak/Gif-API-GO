@@ -21,10 +21,13 @@ func authMiddleware(c *gin.Context) {
 }
 
 func init() {
-	err := godotenv.Load(".env")
 
-	if err != nil {
-		log.Println("Error loading .env file")
+	if os.Getenv("GIN_MODE") != "release" {
+		err := godotenv.Load(".env")
+
+		if err != nil {
+			log.Println("Error loading .env file")
+		}
 	}
 
 	log.Println("using mongo on: " + os.Getenv("MONGO_URL"))
