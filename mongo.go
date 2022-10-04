@@ -51,7 +51,7 @@ func getTags(db string, query string, limit int64, skip int64) []Tag {
 	defer disconnect(client)
 
 	opts := options.Find().
-		SetSort(bson.D{{Key: "count", Value: -1}}).
+		SetSort(bson.D{{Key: "count", Value: -1}, {Key: "name", Value: -1}}).
 		SetLimit(limit).
 		SetSkip(skip)
 
